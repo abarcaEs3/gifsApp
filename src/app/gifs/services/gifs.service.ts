@@ -1,6 +1,6 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Injectable, signal } from "@angular/core";
-import { Observable } from "rxjs";
+import { map } from "rxjs";
 import type { KlipyResponse } from "../interfaces/klipy.interfaces";
 import { environment } from "@environments/environment.development";
 import { Gif } from "../interfaces/gif.interfaces";
@@ -22,19 +22,28 @@ export class GifsService {
     this.loadTrendingGifs();
   }
 
-  searchGifs(query: string, limit: number = 12): Observable<KlipyResponse> {
-    const url = `${this.baseUrl}/${environment.klipyAPIkey}/gifs/search?query=${encodeURIComponent(query)}&per_limit=${limit}`;
-    return this.http.get<KlipyResponse>(url);
+  searchGifs(query: string) {
+    return this.http
+      .get<KlipyResponse>(`${this.baseUrl}/${environment.klipyAPIkey}/gifs/search?q=${query}&per_page=20`)
+      .pipe(
+        map(({data}) => GifMapper.mapKlipyItemstoGifArray(data.data))
+
+        //TODO Historial
+      );
+      /*.subscribe((resp) => {
+        const gifs = GifMapper.mapKlipyItemstoGifArray(resp.data.data);
+        console.log( { Search: gifs });
+      })*/
   }
 
   loadTrendingGifs() {
     this.http
-      .get<KlipyResponse>(`${this.baseUrl}/${environment.klipyAPIkey}/gifs/trending?per_page=50`)
+      .get<KlipyResponse>(`${this.baseUrl}/${environment.klipyAPIkey}/gifs/trending?per_page=20`)
       .subscribe((resp) => {
         const gifs = GifMapper.mapKlipyItemstoGifArray(resp.data.data);
         this.trendingGifs.set(gifs);
         this.trendingGifsLoading.set(false);
-        console.log(gifs);
+        console.log({ gifs });
       })
   }
 }
