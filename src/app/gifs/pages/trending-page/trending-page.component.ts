@@ -20,7 +20,7 @@ import { GifMapper } from '../../mapper/gif.mapper';
 
 @Component({
   selector: 'app-trending-page',
-  imports: [GifsListComponent],
+  imports: [],
   templateUrl: './trending-page.component.html',
 })
 export default class TrendingPage {

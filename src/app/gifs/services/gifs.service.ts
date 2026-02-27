@@ -1,20 +1,20 @@
-import { HttpClient } from "@angular/common/http";
-import { computed, effect, inject, Injectable, signal } from "@angular/core";
-import { map, Observable, tap } from "rxjs";
-import type { KlipyResponse } from "../interfaces/klipy.interfaces";
-import { environment } from "@environments/environment.development";
+import { HttpClient } from '@angular/common/http';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { map, Observable, tap } from 'rxjs';
+import type { KlipyResponse } from '../interfaces/klipy.interfaces';
+import { environment } from '@environments/environment.development';
 import { Gif } from '../interfaces/gif.interfaces';
-import { GifMapper } from "../mapper/gif.mapper";
+import { GifMapper } from '../mapper/gif.mapper';
 
 const GIF_KEY = 'Gifs';
 
 const loadGifsFromLocalStorage = () => {
   const gifs = localStorage.getItem(GIF_KEY);
   return gifs ? JSON.parse(gifs) : {};
-}
+};
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class GifsService {
   private baseUrl = 'https://api.klipy.com/api/v1';
@@ -25,13 +25,24 @@ export class GifsService {
 
   trendingGifsLoading = signal(true);
 
+  //[[gif1, gif2, gif3, gif4, gif5], [gif5, gif6, gif7, gif8, gif9]]
+  trendingGifGroup = computed<Gif[][]>(() => {
+    const groups = [];
+
+    for (let i = 0; i < this.trendingGifs().length; i += 5) {
+      groups.push(this.trendingGifs().slice(i, i + 5));
+    }
+
+    return groups;
+  })
+
   searchHistory = signal<Record<string, Gif[]>>(loadGifsFromLocalStorage());
 
   searchHistoryKeys = computed(() => Object.keys(this.searchHistory()));
 
   saveGifsToLocalStorage = effect(() => {
-    localStorage.setItem(GIF_KEY, JSON.stringify(this.searchHistory()))
-  })
+    localStorage.setItem(GIF_KEY, JSON.stringify(this.searchHistory()));
+  });
 
   constructor() {
     this.loadTrendingGifs();
@@ -39,9 +50,11 @@ export class GifsService {
 
   searchGifs(query: string): Observable<Gif[]> {
     return this.http
-      .get<KlipyResponse>(`${this.baseUrl}/${environment.klipyAPIkey}/gifs/search?q=${query}&per_page=20`)
+      .get<KlipyResponse>(
+        `${this.baseUrl}/${environment.klipyAPIkey}/gifs/search?q=${query}&per_page=40`,
+      )
       .pipe(
-        map(({data}) => GifMapper.mapKlipyItemstoGifArray(data.data)),
+        map(({ data }) => GifMapper.mapKlipyItemstoGifArray(data.data)),
 
         //Historial
         tap((items) => {
@@ -49,23 +62,22 @@ export class GifsService {
             ...history,
             [query.toLowerCase()]: items,
           }));
-        })
+        }),
       );
   }
 
   loadTrendingGifs() {
     this.http
-      .get<KlipyResponse>(`${this.baseUrl}/${environment.klipyAPIkey}/gifs/trending?per_page=20`)
+      .get<KlipyResponse>(`${this.baseUrl}/${environment.klipyAPIkey}/gifs/trending?per_page=40`)
       .subscribe((resp) => {
         const gifs = GifMapper.mapKlipyItemstoGifArray(resp.data.data);
         this.trendingGifs.set(gifs);
         this.trendingGifsLoading.set(false);
         console.log({ gifs });
-      })
+      });
   }
 
   getHistoryGifs(query: string): Gif[] {
     return this.searchHistory()[query] ?? [];
   }
-
 }
