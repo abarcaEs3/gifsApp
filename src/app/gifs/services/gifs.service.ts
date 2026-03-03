@@ -1,10 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import { map, Observable, tap } from 'rxjs';
+import { finalize, map, Observable, tap } from 'rxjs';
 import type { KlipyResponse } from '../interfaces/klipy.interfaces';
 import { environment } from '@environments/environment.development';
 import { Gif } from '../interfaces/gif.interfaces';
 import { GifMapper } from '../mapper/gif.mapper';
+import TrendingPage from '../pages/trending-page/trending-page.component';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 const GIF_KEY = 'Gifs';
 
@@ -23,7 +25,9 @@ export class GifsService {
 
   trendingGifs = signal<Gif[]>([]);
 
-  trendingGifsLoading = signal(true);
+  isLoading = signal(false);
+
+  private TrendingPage = signal(1);
 
   //[[gif1, gif2, gif3, gif4, gif5], [gif5, gif6, gif7, gif8, gif9]]
   trendingGifGroup = computed<Gif[][]>(() => {
@@ -67,13 +71,25 @@ export class GifsService {
   }
 
   loadTrendingGifs() {
+
+    if (this.isLoading()) return;
+
+    this.isLoading.set(true);
+
     this.http
-      .get<KlipyResponse>(`${this.baseUrl}/${environment.klipyAPIkey}/gifs/trending?per_page=40`)
+      .get<KlipyResponse>(`${this.baseUrl}/${environment.klipyAPIkey}/gifs/trending?page=${this.TrendingPage()}&per_page=40`)
+      .pipe(
+        finalize(() => this.isLoading.set(false))
+      )
       .subscribe((resp) => {
         const gifs = GifMapper.mapKlipyItemstoGifArray(resp.data.data);
-        this.trendingGifs.set(gifs);
-        this.trendingGifsLoading.set(false);
-        console.log({ gifs });
+        this.trendingGifs.update(currentGifs => [
+          ...currentGifs,
+          ...gifs
+        ]);
+
+        this.TrendingPage.update(page => page + 1);
+        this.isLoading.set(false);
       });
   }
 
