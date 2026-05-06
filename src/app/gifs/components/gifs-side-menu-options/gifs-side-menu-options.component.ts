@@ -21,14 +21,14 @@ export class GifsSideMenuOptionsComponent {
   menuOptions : MenuOption[] = [
     {
       icon: 'fa-solid fa-chart-line',
-      label: 'Trending',
+      label: 'Tendencia',
       subLabel: 'Gifs Populares',
       route: '/dashboard/trending'
     },
     {
       icon: 'fa-solid fa-magnifying-glass',
-      label: 'Search',
-      subLabel: 'Buscar gifs',
+      label: 'Buscar',
+      subLabel: 'Explorar gifs',
       route: '/dashboard/search'
     }
   ]
