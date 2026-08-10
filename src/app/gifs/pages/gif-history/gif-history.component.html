@@ -1,0 +1,9 @@
+<h3 class="mt-4 text-2xl font-bold tracking-tight text-base-content">
+  Mostrando Gifs: <span class="text-primary">{{ query() }}</span>
+</h3>
+
+<hr class="my-4 border-base-content/10" />
+
+<section class="py-5">
+  <app-gifs-list [gifs]="gifsByKey()" />
+</section>
